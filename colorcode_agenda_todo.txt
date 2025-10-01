@@ -1,0 +1,43 @@
+;; ___________________colorcode todos_______________________
+(with-eval-after-load 'org
+  ;; Edit these regexps/colours to match your filenames/ taste.
+(setq my/org-agenda-file-colors
+      '(("s7\\.org$"       . "LightSkyBlue")
+        ("vem\\.org$"       . "LightGreen")
+        ("szintan\\.org$"       . "LightGoldenrod")
+        ("oop_org\\.org$"       . "LightSalmon")
+        ("num_m_sz\\.org$"       . "LightPink")
+        ("MF\\.org$"       . "Thistle")
+        ("irtech\\.org$"       . "Khaki")
+        ("fenytan\\.org$"       . "PaleTurquoise")
+        ("engb2\\.org$"       . "MistyRose")))
+
+  (defun my/org-agenda--file-for-line ()
+    "Return the file path for the agenda line at point, or nil."
+    (let* ((bol (point-at-bol))
+           ;; check the common properties where org stores the originating marker
+           (marker (or (get-text-property bol 'org-hd-marker)
+                       (get-text-property bol 'org-marker)
+                       (get-text-property bol 'org-marker)))) ; fallback
+      (when (and (markerp marker) (marker-buffer marker))
+        (buffer-file-name (marker-buffer marker)))))
+
+  (defun my/org-agenda--apply-file-colors ()
+    "Apply overlays to agenda lines according to `my/org-agenda-file-colors'."
+    ;; remove old overlays we created previously
+    (remove-overlays (point-min) (point-max) 'my/org-agenda-color t)
+    (save-excursion
+      (goto-char (point-min))
+      (while (< (point) (point-max))
+        (let ((file (my/org-agenda--file-for-line)))
+          (when file
+            (dolist (fc my/org-agenda-file-colors)
+              (when (string-match-p (car fc) file)
+                (let ((ov (make-overlay (point-at-bol) (point-at-eol))))
+                  (overlay-put ov 'face `(:foreground ,(cdr fc)))
+                  (overlay-put ov 'my/org-agenda-color t))))))
+        (forward-line 1))))
+
+  (add-hook 'org-agenda-finalize-hook #'my/org-agenda--apply-file-colors))
+
+;;____________________________________________________________________
